@@ -43,9 +43,12 @@ router.get("/:code", async function (req, res) {
 
     const company = results.rows[0];
     const invoices = invoiceResults.rows;
-    company.invoices = invoices.map(inv => inv.id);
 
     if (!company) throw new NotFoundError();
+
+    company.invoices = invoices.map(inv => inv.id);
+    
+
 
     return res.json({ company });
 });
@@ -124,7 +127,6 @@ router.delete("/:code", async function (req, res) {
     );
 
     const companyCode = results.rows[0];
-    console.log("!!!!!!!!!!!!!!!!", companyCode)
 
     if(!companyCode) throw new NotFoundError();
 
