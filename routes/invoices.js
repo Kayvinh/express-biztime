@@ -39,7 +39,7 @@ router.get('', async function (req, res) {
  */
 
 router.get('/:id', async function (req, res) {
-	const id = req.params.id;
+	const id = Number(req.params.id);
 
 	const invoiceResults = await db.query(
 		`SELECT id, amt, paid, add_date, paid_date, comp_code
@@ -49,7 +49,7 @@ router.get('/:id', async function (req, res) {
 	);
 
 	const invoice = invoiceResults.rows[0];
-	if (!invoice) throw new NotFoundError();
+	if (!invoice) throw new NotFoundError(`Invoice ID#${id} not found`);
 
 	const companyResults = await db.query(
 		`SELECT code, name, description
@@ -59,7 +59,7 @@ router.get('/:id', async function (req, res) {
 	);
 
 	const company = companyResults.rows[0];
-  if (!company) throw new NotFoundError();
+	if (!company) throw new NotFoundError(`Company not found for invoice ID #${id}`);
 
 	invoice.company = company;
 	delete invoice.comp_code;
@@ -77,7 +77,7 @@ router.get('/:id', async function (req, res) {
  */
 
 router.post('', async function (req, res) {
-  if (!req.body) throw new BadRequestError();
+	if (!req.body) throw new BadRequestError();
 	const { comp_code, amt } = req.body;
 
 	const results = await db.query(
@@ -104,7 +104,7 @@ router.post('', async function (req, res) {
 router.put('/:id', async function (req, res) {
 	if (!req.body) throw new BadRequestError();
 
-  const id = req.params.id;
+	const id = Number(req.params.id);
 	const { amt } = req.body;
 
 	const results = await db.query(
@@ -132,22 +132,20 @@ router.put('/:id', async function (req, res) {
  *   {status: "deleted"}
  */
 
-router.delete("/:id", async function (req, res) {
+router.delete('/:id', async function (req, res) {
+	const id = req.params.id;
 
-  const id = req.params.id;
-
-  const results = await db.query(
-      `DELETE FROM invoices
+	const results = await db.query(
+		`DELETE FROM invoices
           WHERE id = $1
           RETURNING id`,
-      [id]
-  );
+		[id]
+	);
 
-  const invoiceId = results.rows[0];
+	const invoiceIdObj = results.rows[0];
+	if (!invoiceIdObj) throw new NotFoundError();
 
-  if(!invoiceId) throw new NotFoundError();
-
-  return res.json({ status: "deleted" });
+	return res.json({ status: 'deleted' });
 });
 
 module.exports = router;
