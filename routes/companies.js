@@ -1,8 +1,15 @@
+"use strict";
+
 const express = require("express");
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
 const router = new express.Router();
 
+/**GET /companies : Returns list of companies
+ * 
+ *  Output:
+ *     {companies: [{code, name}, ...]}
+*/
 router.get("", async function (req, res) {
     const results = await db.query(
         `SELECT code, name
@@ -12,23 +19,41 @@ router.get("", async function (req, res) {
     return res.json({ companies });
 });
 
+/**GET /companies/[code] : Get specific company data
+ *
+ * Input:
+ *   URL parameter
+ *
+ * Output:
+ *   {company: {code, name, description}}
+ */
+
 router.get("/:code", async function (req, res) {
     const code = req.params.code;
-    if (!code) throw new BadRequestError();
 
     const results = await db.query(
         `SELECT code, name, description
             FROM companies
             WHERE code = $1`, [code]);
 
-    if (results.rowCount === 0) throw new NotFoundError();
-
     const company = results.rows[0];
+
+    if (!company) throw new NotFoundError();
+
     return res.json({ company });
 });
 
+/**POST /companies : Create new company data
+ *
+ * Input:
+ *   {code, name, description}
+ *
+ * Output:
+ *   {company: {code, name, description}}
+ */
+
 router.post("", async function (req, res) {
-    if(!req.body) throw new BadRequestError();
+    if (!req.body) throw new BadRequestError();
 
     const { code, name, description } = req.body;
     const results = await db.query(
@@ -37,6 +62,7 @@ router.post("", async function (req, res) {
             RETURNING code, name, description`, [code, name, description]
     );
     const company = results.rows[0];
+    
     return res.status(201).json({ company });
 });
 
@@ -49,7 +75,7 @@ router.post("", async function (req, res) {
  *   {company: {code, name, description}}
  */
 router.put("/:code", async function (req, res) {
-    if (req.body === undefined) throw new BadRequestError();
+    if (!req.body) throw new BadRequestError();
 
     const code = req.params.code;
     const { name, description } = req.body;
@@ -63,13 +89,41 @@ router.put("/:code", async function (req, res) {
         [name, description, code]
     );
 
-    if (results.rowCount === 0) throw new NotFoundError();
     const company = results.rows[0];
 
+    if (!company) throw new NotFoundError();
 
     return res.json({ company });
 });
 
+/**PUT /companies/[code] : Delete existing company.
+ *
+ * Input:
+ *   URL parameter
+ *
+ * Output:
+ *   {message: "Company Deleted"}
+ */
+
+router.delete("/:code", async function (req, res) {
+    if (!req.body) throw new BadRequestError();
+
+    const code = req.params.code;
+
+    const results = await db.query(
+        `DELETE FROM companies
+            WHERE code = $1
+            RETURNING code`,
+        [code]
+    );
+
+    const companyCode = results.rows[0];
+    console.log("!!!!!!!!!!!!!!!!", companyCode)
+
+    if(!companyCode) throw new NotFoundError();
+
+    return res.json({ status: "deleted" });
+});
 
 
 
