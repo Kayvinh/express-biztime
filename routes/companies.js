@@ -36,8 +36,7 @@ router.post("", async function (req, res) {
             VALUES ($1, $2, $3)
             RETURNING code, name, description`, [code, name, description]
     );
-
-    const company = results.row;
+    const company = results.rows[0];
     return res.status(201).json({ company });
 });
 
