@@ -6,7 +6,7 @@ const { BadRequestError, NotFoundError } = require("../expressError");
 const router = new express.Router();
 
 /**GET /companies : Returns list of companies
- * 
+ *
  *  Output:
  *     {companies: [{code, name}, ...]}
 */
@@ -25,7 +25,7 @@ router.get("", async function (req, res) {
  *   URL parameter
  *
  * Output:
- *   {company: {code, name, description}}
+ *   {company: {code, name, description, invoices: [id, ...]}}
  */
 
 router.get("/:code", async function (req, res) {
@@ -36,7 +36,14 @@ router.get("/:code", async function (req, res) {
             FROM companies
             WHERE code = $1`, [code]);
 
+    const invoiceResults = await db.query(
+        `SELECT id
+            FROM invoices
+            WHERE comp_code = $1`, [code]);
+
     const company = results.rows[0];
+    const invoices = invoiceResults.rows;
+    company.invoices = invoices.map(inv => inv.id);
 
     if (!company) throw new NotFoundError();
 
@@ -62,7 +69,7 @@ router.post("", async function (req, res) {
             RETURNING code, name, description`, [code, name, description]
     );
     const company = results.rows[0];
-    
+
     return res.status(201).json({ company });
 });
 
@@ -96,7 +103,7 @@ router.put("/:code", async function (req, res) {
     return res.json({ company });
 });
 
-/**PUT /companies/[code] : Delete existing company.
+/**DELETE /companies/[code] : Delete existing company.
  *
  * Input:
  *   URL parameter
@@ -106,7 +113,6 @@ router.put("/:code", async function (req, res) {
  */
 
 router.delete("/:code", async function (req, res) {
-    if (!req.body) throw new BadRequestError();
 
     const code = req.params.code;
 
