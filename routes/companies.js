@@ -40,7 +40,35 @@ router.post("", async function (req, res) {
     return res.status(201).json({ company });
 });
 
+/**PUT /companies/[code] : Edit existing company.
+ *
+ * Input:
+ *   {name, description}
+ *
+ * Output:
+ *   {company: {code, name, description}}
+ */
+router.put("/:code", async function (req, res) {
+    if (req.body === undefined) throw new BadRequestError();
 
+    const code = req.params.code;
+    const { name, description } = req.body;
+
+    const results = await db.query(
+        `UPDATE companies
+            SET name=$1,
+                description=$2
+            WHERE code = $3
+            RETURNING code, name, description`,
+        [name, description, code]
+    );
+
+    if (results.rowCount === 0) throw new NotFoundError();
+    const company = results.rows[0];
+
+
+    return res.json({ company });
+});
 
 
 
