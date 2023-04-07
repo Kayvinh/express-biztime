@@ -134,6 +134,7 @@ router.put('/:id', async function (req, res) {
 
 router.delete('/:id', async function (req, res) {
 	const id = req.params.id;
+  if (isNaN(Number(id))) throw new NotFoundError();
 
 	const results = await db.query(
 		`DELETE FROM invoices
